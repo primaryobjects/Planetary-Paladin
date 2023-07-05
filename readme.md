@@ -17,7 +17,7 @@ The complete ChatGPT4 prompt history for the game is available [here](prompt.txt
 
 ### Cover image
 
-![Planetary Paladin](screenshots/space4.gif)
+![Planetary Paladin](screenshots/space5.gif)
 
 ## License
 
