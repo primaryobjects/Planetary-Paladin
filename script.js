@@ -232,19 +232,18 @@ function updateScore() {
 
 // Check for collisions between lasers and enemies
 function checkCollisions() {
+  const laserBox = new THREE.Box3();
+  const enemyBox = new THREE.Box3();
   for (const laser of lasers) {
     if (laser.visible) {
+      laserBox.setFromObject(laser);
       for (const enemy of enemies) {
-        const dx = laser.position.x - enemy.position.x;
-        const dy = laser.position.y - enemy.position.y;
-        const dz = laser.position.z - enemy.position.z;
-        const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        //console.log(`${laser.position.x},${laser.position.y},${laser.position.z} | ${enemy.position.x},${enemy.position.y},${enemy.position.z} => ${distance}`);
-        if (distance < 1) {
+        enemyBox.setFromObject(enemy);
+        if (laserBox.intersectsBox(enemyBox)) {
           laser.visible = false;
+          showExplosion(enemy.position);
           enemy.position.z = -10;
           enemy.position.y = Math.random() * 20 - 10;
-          showExplosion(enemy.position);
           explosionSound.pause();
           explosionSound.currentTime = 0;
           explosionSound.play();
