@@ -179,8 +179,63 @@ function updateEnemyPositions() {
       enemy.position.z = -10;
       enemy.position.y = Math.random() * 20 - 10;
     }
+    // Make the enemies fire lasers at random intervals if they are in front of the player
+    if (Math.random() < 0.005 && enemy.position.z < player.position.z) {
+      fireEnemyLaser(enemy);
+    }
   }
 }
+
+
+// Update enemy laser positions
+function updateEnemyLaserPositions() {
+  for (const enemyLaser of enemyLasers) {
+    if (enemyLaser.visible) {
+      // Move the enemy laser in its specified direction
+      enemyLaser.position.add(enemyLaser.direction.clone().multiplyScalar(0.25));
+      if (enemyLaser.position.z > 50) {
+        enemyLaser.visible = false;
+      }
+    }
+  }
+}
+
+// Check for collisions between player and enemy lasers
+function checkPlayerCollisions() {
+  const playerBox = new THREE.Box3().setFromObject(player);
+  for (const enemyLaser of enemyLasers) {
+    if (enemyLaser.visible) {
+      const laserBox = new THREE.Box3().setFromObject(enemyLaser);
+      if (playerBox.intersectsBox(laserBox)) {
+        // Player was hit by an enemy laser
+        enemyLaser.visible = false;
+
+        // Flash the screen red and fade out the red color
+        score -= 200;
+        updateScore();
+        // Start the red flash effect
+        redFlashTime = 1;
+
+        playerHitSound.pause();
+        playerHitSound.currentTime = 0;
+        playerHitSound.play();
+
+        break;
+      }
+    }
+  }
+}
+
+// Set up red flash effect
+let redFlashTime = 0;
+
+// Create a red mesh to cover the screen
+const redGeometry = new THREE.PlaneGeometry(20, 20);
+const redMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0 });
+const redMesh = new THREE.Mesh(redGeometry, redMaterial);
+redMesh.position.z = 5;
+scene.add(redMesh);
+
 
 // Set up explosion array
 const explosions = [];
@@ -251,6 +306,37 @@ function checkCollisions() {
           break;
         }
       }
+    }
+  }
+}
+
+// Set up enemy laser array
+const enemyLasers = [];
+
+// Create enemy laser objects
+for (let i = 0; i < 10; i++) {
+  const enemyLaserGeometry = new THREE.BoxGeometry(0.1, 0.1, 5);
+  const enemyLaserMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+  const enemyLaser = new THREE.Mesh(enemyLaserGeometry, enemyLaserMaterial);
+  enemyLaser.visible = false;
+  scene.add(enemyLaser);
+  enemyLasers.push(enemyLaser);
+}
+
+// Fire an enemy laser
+function fireEnemyLaser(enemy) {
+  for (const enemyLaser of enemyLasers) {
+    if (!enemyLaser.visible) {
+      enemyLaser.position.copy(enemy.position);
+      // Set the direction of the enemy laser based on the position of the player
+      enemyLaser.direction = new THREE.Vector3().subVectors(player.position, enemy.position).normalize();
+      enemyLaser.visible = true;
+
+      enemyLaserSound.pause();
+      enemyLaserSound.currentTime = 0;
+      enemyLaserSound.play();
+
+      break;
     }
   }
 }
@@ -343,16 +429,27 @@ const laserSound = new Audio("images/laser.mp3");
 
 // Create an explosion sound effect
 const explosionSound = new Audio("images/explode.mp3");
+const enemyLaserSound = new Audio("images/enemyLaser.mp3");
+const playerHitSound = new Audio("images/playerHit.mp3");
 
 // Update player, enemy, laser, explosion, and star positions in render loop
 function render() {
   requestAnimationFrame(render);
   updatePlayerPosition();
   updateEnemyPositions();
+  updateEnemyLaserPositions();
   updateLaserPositions();
   checkCollisions();
+  checkPlayerCollisions();
   updateExplosions();
   updateStarPositions();
+
+  // Update red flash effect
+  if (redFlashTime > 0) {
+    redFlashTime -= 0.1;
+    redMaterial.opacity = redFlashTime;
+  }
+
   renderer.render(scene, camera);
 }
 render();
